@@ -591,9 +591,9 @@ const CONFIG = {
   phoneDisplay: "070-8821-6610", // 표시용
   bizHourStart: 9,               // 상담 시작
   bizHourEnd: 18,                // 상담 종료
-  geminiApiKey: "YOUR_GEMINI_API_KEY",   // TODO: 본인 키
-  geminiModel: "gemini-2.0-flash",
-  sheetWebAppUrl: "https://script.google.com/macros/s/AKfycbzJ2mXl-zQ9gjWNo-7bpw4zI9YixDrV2M0GamrYXpCTgn_107LCJPaxdSuiL61NzXem/exec"  // 구글시트 저장
+  // 서버(Apps Script) URL — 상담신청 저장 + AI 챗봇 둘 다 여기로.
+  // Gemini API 키는 이 서버 안에 숨겨져 있어서 손님에게 노출 안 됨.
+  serverUrl: "https://script.google.com/macros/s/AKfycbzJ2mXl-zQ9gjWNo-7bpw4zI9YixDrV2M0GamrYXpCTgn_107LCJPaxdSuiL61NzXem/exec"
 };
 
 /* ====================== KNOWLEDGE (설문지 압축본) ====================== */
@@ -813,27 +813,32 @@ function revealLead(){
 
 /* ====================== GEMINI ====================== */
 async function callGemini(){
-  // API 키 미설정 시 데모 응답
-  if(CONFIG.geminiApiKey === "YOUR_GEMINI_API_KEY"){
+  // 서버(Apps Script) 미설정 시 데모 응답
+  if(!CONFIG.serverUrl || CONFIG.serverUrl.indexOf("script.google.com") === -1){
     return demoReply();
   }
   const contents = history.map(h=>({
     role: h.role==='user'?'user':'model',
     parts:[{text:h.text}]
   }));
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiApiKey}`;
-  const res = await fetch(url,{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      systemInstruction:{parts:[{text:systemPrompt()}]},
-      contents,
-      generationConfig:{temperature:0.7,maxOutputTokens:400}
-    })
-  });
-  const data = await res.json();
-  const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if(!txt) throw new Error('no text');
-  return txt.trim();
+  try{
+    // Gemini를 직접 부르지 않고 Apps Script 서버로 보냄 (키는 서버에 숨겨져 있음)
+    const res = await fetch(CONFIG.serverUrl,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, // CORS preflight 회피
+      body:JSON.stringify({
+        action:'chat',
+        systemPrompt: systemPrompt(),
+        contents
+      })
+    });
+    const data = await res.json();
+    if(data && data.ok && data.reply) return data.reply;
+    // 서버 응답 실패 시 데모로 폴백
+    return demoReply();
+  }catch(e){
+    return demoReply();
+  }
 }
 
 /* 데모용 규칙 응답 (키 넣기 전 테스트) */
@@ -983,8 +988,8 @@ async function submitLead(){
   };
 
   try{
-    if(CONFIG.sheetWebAppUrl !== "YOUR_APPS_SCRIPT_WEBAPP_URL"){
-      await fetch(CONFIG.sheetWebAppUrl,{
+    if(CONFIG.serverUrl && CONFIG.serverUrl.indexOf("script.google.com") !== -1){
+      await fetch(CONFIG.serverUrl,{
         method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'}, // GAS 프리플라이트 회피
         body:JSON.stringify(payload)
