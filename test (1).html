@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>챗봇 AI 진단</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:640px;margin:24px auto;padding:0 16px}
+  button{background:#0788bc;color:#fff;border:0;border-radius:10px;padding:16px 24px;font-size:17px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.5}
+  .box{background:#0b1020;color:#7fffd4;padding:16px;border-radius:10px;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.5;margin-top:16px}
+  .v{font-size:18px;font-weight:800;padding:16px;border-radius:10px;margin-top:16px}
+  .ok{background:#e7f8ee;color:#0a7d40}
+  .bad{background:#fdeaea;color:#c0392b}
+</style>
+</head>
+<body>
+<h1>🔍 챗봇 AI 진단</h1>
+<p>버튼을 누르면 이 사이트의 <b>/api/chat</b> 함수를 직접 테스트합니다. AI가 작동하는지 바로 알 수 있어요.</p>
+<button id="b" onclick="run()">AI 작동 테스트</button>
+<div id="v"></div>
+<div class="box" id="o">여기에 결과가 표시됩니다…</div>
+
+<script>
+async function run(){
+  const b=document.getElementById('b'), o=document.getElementById('o'), v=document.getElementById('v');
+  b.disabled=true; b.textContent='테스트 중…'; v.innerHTML=''; o.textContent='요청 보내는 중…';
+  try{
+    const res=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        systemPrompt:'너는 상담봇이야. 한 문장으로 친근하게 답해.',
+        contents:[{role:'user',parts:[{text:'지금 AI로 작동해?'}]}]
+      })
+    });
+    const raw=await res.text();
+    let data=null; try{data=JSON.parse(raw);}catch(e){}
+    o.textContent='HTTP '+res.status+'\n\n'+raw;
+
+    if(data && data.ok && data.reply){
+      v.className='v ok';
+      v.innerHTML='✅ AI 정상 작동!<br><br>답변: "'+data.reply+'"<br><br>→ 챗봇이 잘 됩니다. 메인 페이지에서 캐시 지우고(Ctrl+Shift+R) 다시 해보세요.';
+    } else if(res.status===404){
+      v.className='v bad';
+      v.innerHTML='❌ /api/chat 함수를 못 찾음 (404)<br><br>→ chat.js가 api 폴더에 제대로 없거나 배포 안 됨.';
+    } else if(data && data.ok===false){
+      v.className='v bad';
+      let h='';
+      const s=JSON.stringify(data);
+      if(s.includes('GEMINI_API_KEY')||s.includes('환경변수')) h='<br>→ Vercel 환경변수 GEMINI_API_KEY 문제.';
+      else if(s.includes('404')||s.includes('NOT_FOUND')||s.includes('no longer')) h='<br>→ 모델명 문제. 아래 raw 보여주세요.';
+      else if(s.includes('finishReason')) h='<br>→ 답변 생성 실패. 아래 raw 보여주세요.';
+      v.innerHTML='❌ 서버가 실패 반환.'+h+'<br><br>아래 검은 박스 내용을 캡처해주세요.';
+    } else {
+      v.className='v bad';
+      v.innerHTML='❌ 예상 밖 응답. 아래 검은 박스 캡처해주세요.';
+    }
+  }catch(e){
+    o.textContent='fetch 에러: '+e.name+' — '+e.message;
+    v.className='v bad';
+    v.innerHTML='❌ 연결 실패.<br>→ 이 진단파일이 챗봇 사이트에 안 올라갔을 수 있어요.';
+  }
+  b.disabled=false; b.textContent='다시 테스트';
+}
+</script>
+</body>
+</html>
