@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     if (typeof body === "string") body = JSON.parse(body);
     const { systemPrompt, contents } = body || {};
 
-    const model = "gemini-3.5-flash";
+    const model = "gemini-3.1-flash-lite";
     const url =
       "https://generativelanguage.googleapis.com/v1beta/models/" +
       model +
