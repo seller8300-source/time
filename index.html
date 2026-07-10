@@ -721,6 +721,9 @@ ${KB}
 
 [대화 규칙]
 - 답변은 짧고 명확하게(2~4문장). 이모지는 한두 개만 자연스럽게.
+- 절대 답변을 도중에 끊거나 "답변이 끊겨서 죄송" 같은 말을 하지 마세요. 항상 완결된 문장으로 끝내세요.
+- 고객이 "산업용"이라고만 말하면, 저희가 산업용으로 취급하는 건 에어컨과 제습기 두 가지예요. 어느 쪽인지 되물으세요. 예: "산업용 에어컨을 찾으세요, 아니면 산업용 제습기를 찾으세요?"
+- 고객이 "?"나 아주 짧은 말, 뜻이 모호한 말을 하면, 당황하지 말고 자연스럽게 "어떤 게 궁금하세요? 제품·가격·기간 뭐든 편하게 물어보세요 🙂"처럼 다시 유도하세요.
 - 표에 없는 사이즈나 배송비 등 지어내지 말고 "상담에서 정확히 안내드릴게요"로 유도.
 - 고객이 관심을 보이면(견적·기간·수량 언급 등) 먼저 "혹시 담당자 상담 도와드릴까요?"라고 물어보세요. 고객이 긍정("네", "좋아요", "신청" 등)하면 그때 답변 맨 끝에 [상담신청] 태그를 붙이세요(시스템이 폼을 여는 신호, 고객에게는 안 보임). 고객이 원하지 않으면 태그를 붙이지 마세요.
 - 고객이 오타를 내거나 비슷한 말(예: "코끼리에어컨", "산업용에어컨", "스팟쿨러")을 하면 이동식에어컨을 뜻하는 것으로 이해하고 자연스럽게 이어가세요. 오타는 문맥으로 알아서 파악하세요.
@@ -850,24 +853,44 @@ async function callGemini(){
     role: h.role==='user'?'user':'model',
     parts:[{text:h.text}]
   }));
-  try{
-    // Gemini를 직접 부르지 않고 Apps Script 서버로 보냄 (키는 서버에 숨겨져 있음)
-    const res = await fetch(CONFIG.serverUrl,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'}, // CORS preflight 회피
-      body:JSON.stringify({
-        action:'chat',
-        systemPrompt: systemPrompt(),
-        contents
-      })
-    });
-    const data = await res.json();
-    if(data && data.ok && data.reply) return data.reply;
-    // 서버 응답 실패 시 데모로 폴백
-    return demoReply();
-  }catch(e){
-    return demoReply();
+  const bodyStr = JSON.stringify({
+    action:'chat',
+    systemPrompt: systemPrompt(),
+    contents
+  });
+
+  // 서버가 늦을 수 있으니 넉넉히 기다리고(45초), 실패하면 한 번 더 재시도
+  async function tryOnce(timeoutMs){
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), timeoutMs);
+    try{
+      const res = await fetch(CONFIG.serverUrl,{
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'}, // CORS preflight 회피
+        body: bodyStr,
+        signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      const data = await res.json();
+      if(data && data.ok && data.reply) return data.reply;
+      return null; // 서버가 실패 반환
+    }catch(e){
+      clearTimeout(timer);
+      return null; // 타임아웃 or 네트워크 오류
+    }
   }
+
+  // 1차 시도 (45초 대기)
+  let reply = await tryOnce(45000);
+  if(reply) return reply;
+
+  // 2차 재시도 (잠깐 쉬고 다시, 45초)
+  await new Promise(r=>setTimeout(r, 1200));
+  reply = await tryOnce(45000);
+  if(reply) return reply;
+
+  // 두 번 다 실패하면 그때만 규칙모드로 폴백
+  return demoReply();
 }
 
 /* 데모용 규칙 응답 (키 넣기 전 테스트) */
@@ -886,10 +909,19 @@ function demoReply(){
   }
 
   // ---- 대화 전체에서 정보 수집 ----
+  // "산업용"만 단독 언급(에어컨/제습기 특정 없음) → 되물음
+  const saysIndustrial = /산업용/.test(allUser);
+  const saysAC = /에어컨|에어콘|냉방|스팟쿨러|스팟|쿨러|2구|3구|코끼리|스탠드|천장형|벽걸이/.test(allUser);
+  const saysDH = /제습|습기|눅눅|물난리|침수|곰팡이|누수/.test(allUser);
+  const saysFZ = /냉동|냉장|아이스크림|쇼케이스|보관|초저온|냉동고/.test(allUser);
+  if(saysIndustrial && !saysAC && !saysDH && !saysFZ){
+    return Promise.resolve("산업용 제품 찾으시는군요! 저희가 산업용으로 취급하는 건 에어컨과 제습기 두 가지예요. 혹시 산업용 에어컨을 찾으세요, 아니면 산업용 제습기를 찾으세요? 🙂");
+  }
+
   let product = null;
-  if(/에어컨|에어콘|냉방|시원|더워|더위|폭염|스팟쿨러|스팟|쿨러|2구|3구|코끼리|산업용/.test(allUser)) product='ac';
-  if(/제습|습기|눅눅|물난리|침수|곰팡이|누수/.test(allUser)) product='dh';
-  if(/냉동|냉장|아이스크림|쇼케이스|보관|초저온|냉동고/.test(allUser)) product='fz';
+  if(saysAC || (saysIndustrial && !saysDH && !saysFZ)) product='ac';
+  if(saysDH) product='dh';
+  if(saysFZ) product='fz';
 
   // 에어컨 타입(스탠드 vs 이동식) 판별
   let acType = null; // 'stand' | 'mobile' | null(미확정)
