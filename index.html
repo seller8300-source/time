@@ -118,7 +118,7 @@
     display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
   .chat-head .who{font-weight:700;font-size:15px;letter-spacing:-.3px}
   .chat-head .stat{font-size:12px;color:#9FD6EA;display:flex;align-items:center;gap:5px;margin-top:1px}
-  .chat-body{height:380px;overflow-y:auto;padding:18px;background:#F7FBFD;display:flex;flex-direction:column;gap:12px}
+  .chat-body{height:380px;overflow-y:auto;padding:18px;background:#F7FBFD;display:flex;flex-direction:column;gap:12px;scroll-behavior:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .msg{max-width:82%;padding:11px 14px;border-radius:14px;font-size:14.5px;letter-spacing:-.2px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
   .msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}
   .msg.user{align-self:flex-end;background:linear-gradient(180deg,var(--cyan),var(--cyan-deep));color:#fff;border-bottom-right-radius:5px}
@@ -829,13 +829,22 @@ function paintStatus(){
 let history = [];   // {role, text}
 let leadShown = false;
 
+// 채팅을 맨 아래로 (부드럽게, 렌더 후 한 번만)
+function scrollChatBottom(smooth){
+  const body = document.getElementById('chatBody');
+  if(!body) return;
+  requestAnimationFrame(()=>{
+    body.scrollTo({ top: body.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+  });
+}
+
 function addMsg(text, who){
   const body = document.getElementById('chatBody');
   const d = document.createElement('div');
   d.className = 'msg '+who;
   d.textContent = text;
   body.appendChild(d);
-  body.scrollTop = body.scrollHeight;
+  scrollChatBottom(true);
   return d;
 }
 function showTyping(){
@@ -843,7 +852,8 @@ function showTyping(){
   const d = document.createElement('div');
   d.className='msg bot';d.id='typingBubble';
   d.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
-  body.appendChild(d);body.scrollTop=body.scrollHeight;
+  body.appendChild(d);
+  scrollChatBottom(true);
 }
 function hideTyping(){const t=document.getElementById('typingBubble');if(t)t.remove();}
 
@@ -1323,27 +1333,21 @@ function startTyping(){
 function isMobile(){ return window.matchMedia('(max-width:600px)').matches; }
 
 // 실제 화면 높이+위치 계산 (iOS 카톡/사파리 키보드 대응)
+let _lastH = 0, _lastTop = -1;
 function setAppHeight(){
   const vv = window.visualViewport;
-  const h = (vv && vv.height) || window.innerHeight;
-  const top = (vv && vv.offsetTop) || 0;
+  const h = Math.round((vv && vv.height) || window.innerHeight);
+  const top = Math.round((vv && vv.offsetTop) || 0);
+  // 값이 실제로 바뀔 때만 갱신 (떨림 방지)
+  if(h === _lastH && top === _lastTop) return;
+  _lastH = h; _lastTop = top;
   document.documentElement.style.setProperty('--app-height', h + 'px');
   document.documentElement.style.setProperty('--vv-top', top + 'px');
 }
 setAppHeight();
 window.addEventListener('resize', setAppHeight);
-window.addEventListener('scroll', ()=>{
-  if(document.body.classList.contains('chat-open')) setAppHeight();
-});
 if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', ()=>{
-    setAppHeight();
-    const b=document.getElementById('chatBody');
-    if(b && document.body.classList.contains('chat-open')) b.scrollTop=b.scrollHeight;
-  });
-  window.visualViewport.addEventListener('scroll', ()=>{
-    if(document.body.classList.contains('chat-open')) setAppHeight();
-  });
+  window.visualViewport.addEventListener('resize', setAppHeight);
 }
 
 function openChat(){
@@ -1354,8 +1358,7 @@ function openChat(){
     document.documentElement.style.overflow='hidden';
     setTimeout(()=>{
       setAppHeight();
-      const b=document.getElementById('chatBody');
-      if(b) b.scrollTop=b.scrollHeight;
+      scrollChatBottom(false);
       const inp=document.getElementById('chatInput');
       if(inp) inp.focus();
     },100);
@@ -1372,15 +1375,12 @@ function closeChat(){
   if(inp) inp.blur();
 }
 
-// 입력창 포커스 시 항상 최신 메시지가 보이게 (키보드 대응)
+// 입력창 포커스 시 최신 메시지가 보이게 (키보드 대응, 부드럽지 않게 딱)
 window.addEventListener('DOMContentLoaded',()=>{
   const inp=document.getElementById('chatInput');
   if(inp){
     inp.addEventListener('focus',()=>{
-      setTimeout(()=>{
-        const b=document.getElementById('chatBody');
-        if(b) b.scrollTop=b.scrollHeight;
-      },300);
+      setTimeout(()=>scrollChatBottom(false),350);
     });
   }
 });
