@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>더시원컴퍼니 · 이동식에어컨 단기렌탈</title>
 <style>
   :root{
@@ -129,7 +129,7 @@
   .quick button:hover{background:var(--ice)}
   .chat-input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
   .chat-input input{
-    flex:1;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:14.5px;outline:none}
+    flex:1;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:16px;outline:none}
   .chat-input input:focus{border-color:var(--cyan)}
   .chat-input button{
     background:linear-gradient(180deg,var(--cyan),var(--cyan-deep));border:0;color:#fff;
@@ -470,7 +470,7 @@
         <tbody>
           <tr><td>1일</td><td>15</td><td>20</td></tr>
           <tr><td>2~3일</td><td>20</td><td>25</td></tr>
-          <tr><td>일주일</td><td>25</td><td>35</td></tr>
+          <tr><td>일주일</td><td>30</td><td>35</td></tr>
           <tr><td>1개월</td><td>55</td><td>75</td></tr>
           <tr><td>시즌렌탈</td><td>75</td><td>95</td></tr>
           <tr><td>월 연장</td><td>25</td><td>25</td></tr>
@@ -525,13 +525,13 @@
 <!-- consult / chatbot -->
 <section class="block" id="consult">
   <div class="wrap">
-    <span class="kicker" style="display:block;text-align:center">AI 상담</span>
+    <span class="kicker" style="display:block;text-align:center">24시 상담</span>
     <h2 style="text-align:center">궁금한 거 편하게 물어보세요</h2>
     <p style="text-align:center;color:var(--muted);margin:-8px 0 22px;letter-spacing:-.3px">
-      가격·기간·설치·배송, 뭐든 편하게 물어보시면 돼요. 상담부터 신청까지 여기서 한 번에.</p>
+      가격·기간·설치·배송, 뭐든 편하게 물어보시면 돼요.<br>상담부터 신청까지 여기서 한 번에.</p>
 
     <!-- 모바일 전용: 상담 시작 버튼 (챗봇은 눌러야 전체화면으로 뜸) -->
-    <button class="mobile-chat-start" onclick="openChat()">💬 AI 상담 시작하기</button>
+    <button class="mobile-chat-start" onclick="openChat()">💬 상담 시작하기</button>
 
     <div class="chat-shell">
       <div class="chat-head">
@@ -654,7 +654,7 @@ const KB = `
 ■ 이동식에어컨 (단위: 만원, 대당)
 - 1일: 2구 15 / 3구 20
 - 2~3일: 2구 20 / 3구 25
-- 일주일: 2구 25 / 3구 35
+- 일주일: 2구 30 / 3구 35
 - 1개월(월렌탈): 2구 55 / 3구 75
 - 시즌렌탈: 2구 75 / 3구 95
 - 월 연장: 2구·3구 공통 월 25 추가
@@ -1186,7 +1186,7 @@ function demoReply(){
   }
 
   const P = {
-    ac:{'2구':{'단기':'15~20','일주일':'25','1개월':'55','시즌':'75'}, '3구':{'단기':'20~25','일주일':'35','1개월':'75','시즌':'95'}},
+    ac:{'2구':{'단기':'15~20','일주일':'30','1개월':'55','시즌':'75'}, '3구':{'단기':'20~25','일주일':'35','1개월':'75','시즌':'95'}},
     dh:{'60L':{'단기':'8','일주일':'12','1개월':'20~25','시즌':'30'},'120L':{'단기':'20','일주일':'30','1개월':'65~70','시즌':'80'},'150L':{'단기':'25','일주일':'40','1개월':'75~80','시즌':'90'},'210L':{'단기':'35','일주일':'55','1개월':'90~95','시즌':'110'},'260L':{'단기':'45','일주일':'60','1개월':'100~105','시즌':'120'}},
     fz:{'600':{'단기':'10','일주일':'12','1개월':'20~25','시즌':'25'},'900':{'단기':'12','일주일':'20','1개월':'25~30','시즌':'45'},'1000':{'단기':'12','일주일':'20','1개월':'25~30','시즌':'45'},'1200':{'단기':'20','일주일':'25','1개월':'35~40','시즌':'55'},'1500':{'단기':'22','일주일':'28','1개월':'40~45','시즌':'60'},'1700':{'단기':'25','일주일':'30','1개월':'45~50','시즌':'65'},'1800':{'단기':'25','일주일':'30','1개월':'45~50','시즌':'65'}}
   };
