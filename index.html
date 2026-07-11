@@ -1347,7 +1347,17 @@ function setAppHeight(){
 setAppHeight();
 window.addEventListener('resize', setAppHeight);
 if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', setAppHeight);
+  window.visualViewport.addEventListener('resize', ()=>{
+    setAppHeight();
+    // 키보드가 실제로 뜨거나 접힐 때 채팅을 맨 아래로
+    if(document.body.classList.contains('chat-open')) scrollChatBottom(false);
+  });
+}
+
+// 키보드 애니메이션 동안 여러 번 스크롤해서 확실히 맨 아래 붙이기
+function forceScrollBottom(){
+  const times = [0, 80, 160, 260, 400, 550];
+  times.forEach(t=> setTimeout(()=>scrollChatBottom(false), t));
 }
 
 let _savedScrollY = 0;
@@ -1378,14 +1388,11 @@ function closeChat(){
   window.scrollTo(0, _savedScrollY);
 }
 
-// 입력창 포커스 시 최신 메시지 보이게 (iOS 자동스크롤 후 한 번 정리)
+// 입력창 포커스 시 최신 메시지 보이게 (키보드 애니메이션 동안 반복 스크롤)
 window.addEventListener('DOMContentLoaded',()=>{
   const inp=document.getElementById('chatInput');
   if(inp){
-    inp.addEventListener('focus',()=>{
-      // 키보드 애니메이션·iOS 자동스크롤 끝난 뒤 채팅만 아래로
-      setTimeout(()=>scrollChatBottom(false),450);
-    });
+    inp.addEventListener('focus', forceScrollBottom);
   }
 });
 window.addEventListener('DOMContentLoaded',()=>{
