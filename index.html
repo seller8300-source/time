@@ -143,23 +143,35 @@
   .chat-close{display:none;margin-left:auto;background:rgba(255,255,255,.15);border:0;color:#fff;
     width:32px;height:32px;border-radius:9px;font-size:18px;cursor:pointer;line-height:1}
 
+  /* 모바일 상담 시작 버튼 (기본 숨김, 모바일에서만) */
+  .mobile-chat-start{display:none}
+
   /* ===== 모바일: 카톡식 전체화면 챗봇 ===== */
   @media(max-width:600px){
+    /* 평소엔 챗봇 숨김 (버튼 눌러야 뜸) */
+    .chat-shell{display:none}
+    /* 상담 시작 버튼 표시 */
+    .mobile-chat-start{
+      display:block;width:100%;
+      background:linear-gradient(180deg,var(--cyan),var(--cyan-deep));
+      border:0;color:#fff;font-family:inherit;font-weight:800;font-size:16px;
+      padding:18px;border-radius:16px;cursor:pointer;box-shadow:var(--shadow)}
     /* 챗봇이 열리면 body 스크롤 잠금 */
     body.chat-open{overflow:hidden}
     /* 열린 상태의 chat-shell을 화면 전체로 */
     body.chat-open .chat-shell{
-      position:fixed;inset:0;z-index:9999;
+      display:flex;
+      position:fixed;left:0;top:0;right:0;z-index:9999;
       max-width:none;margin:0;border:0;border-radius:0;
-      display:flex;flex-direction:column;
-      height:100dvh;   /* 키보드 올라오면 자동으로 줄어듦 */
+      flex-direction:column;
+      height:var(--app-height, 100vh);   /* JS로 실제 높이 계산 (카톡 브라우저 대응) */
     }
     body.chat-open .chat-head{flex:0 0 auto}
     body.chat-open .chat-close{display:flex;align-items:center;justify-content:center}
-    body.chat-open .chat-body{flex:1 1 auto;height:auto;min-height:0}
+    body.chat-open .chat-body{flex:1 1 auto;height:auto;min-height:0;overflow-y:auto}
     body.chat-open .quick{flex:0 0 auto}
-    body.chat-open .chat-input{flex:0 0 auto;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
-    body.chat-open .lead{flex:0 0 auto;max-height:60dvh;overflow-y:auto}
+    body.chat-open .chat-input{flex:0 0 auto}
+    body.chat-open .lead{flex:0 0 auto;max-height:55vh;overflow-y:auto}
   }
   @keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
 
@@ -516,6 +528,9 @@
     <p style="text-align:center;color:var(--muted);margin:-8px 0 22px;letter-spacing:-.3px">
       가격·기간·설치·배송, 뭐든 편하게 물어보시면 돼요. 상담부터 신청까지 여기서 한 번에.</p>
 
+    <!-- 모바일 전용: 상담 시작 버튼 (챗봇은 눌러야 전체화면으로 뜸) -->
+    <button class="mobile-chat-start" onclick="openChat()">💬 AI 상담 시작하기</button>
+
     <div class="chat-shell">
       <div class="chat-head">
         <div class="avatar">시원</div>
@@ -609,7 +624,7 @@
 <div class="floatbar">
   <div class="ftxt" id="floatTxt"><b>지금 상담 가능</b> · 1분이면 견적 받아요</div>
   <a class="fcall" id="floatCall" href="tel:07088216610">📞 전화</a>
-  <button class="fchat" onclick="openChat()">💬 상담</button>
+  <button class="fchat" onclick="openChat()">💬 24시 상담 바로하기</button>
 </div>
 
 <script>
@@ -1305,10 +1320,26 @@ function startTyping(){
 /* ====================== INIT ====================== */
 function isMobile(){ return window.matchMedia('(max-width:600px)').matches; }
 
+// 실제 화면 높이 계산 (카톡 인앱 브라우저·키보드 대응)
+function setAppHeight(){
+  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', h + 'px');
+}
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', ()=>{
+    setAppHeight();
+    // 키보드 뜨면 최신 메시지로 스크롤
+    const b=document.getElementById('chatBody');
+    if(b && document.body.classList.contains('chat-open')) b.scrollTop=b.scrollHeight;
+  });
+}
+
 function openChat(){
   if(isMobile()){
+    setAppHeight();
     document.body.classList.add('chat-open');
-    // 채팅 최신 메시지로 스크롤
     setTimeout(()=>{
       const b=document.getElementById('chatBody');
       if(b) b.scrollTop=b.scrollHeight;
