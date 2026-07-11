@@ -157,7 +157,7 @@
       border:0;color:#fff;font-family:inherit;font-weight:800;font-size:16px;
       padding:18px;border-radius:16px;cursor:pointer;box-shadow:var(--shadow)}
     /* 챗봇이 열리면 body 스크롤 잠금 */
-    body.chat-open{overflow:hidden}
+    body.chat-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
     /* 열린 상태의 chat-shell을 화면 전체로 */
     body.chat-open .chat-shell{
       display:flex;
@@ -1350,12 +1350,13 @@ if(window.visualViewport){
   window.visualViewport.addEventListener('resize', setAppHeight);
 }
 
+let _savedScrollY = 0;
 function openChat(){
   if(isMobile()){
+    _savedScrollY = window.scrollY || window.pageYOffset || 0;
     setAppHeight();
     document.body.classList.add('chat-open');
-    // 배경 스크롤 완전 잠금
-    document.documentElement.style.overflow='hidden';
+    document.body.style.top = (-_savedScrollY) + 'px';
     setTimeout(()=>{
       setAppHeight();
       scrollChatBottom(false);
@@ -1369,18 +1370,21 @@ function openChat(){
 }
 
 function closeChat(){
-  document.body.classList.remove('chat-open');
-  document.documentElement.style.overflow='';
   const inp=document.getElementById('chatInput');
   if(inp) inp.blur();
+  document.body.classList.remove('chat-open');
+  document.body.style.top = '';
+  // 저장한 위치로 복원
+  window.scrollTo(0, _savedScrollY);
 }
 
-// 입력창 포커스 시 최신 메시지가 보이게 (키보드 대응, 부드럽지 않게 딱)
+// 입력창 포커스 시 최신 메시지 보이게 (iOS 자동스크롤 후 한 번 정리)
 window.addEventListener('DOMContentLoaded',()=>{
   const inp=document.getElementById('chatInput');
   if(inp){
     inp.addEventListener('focus',()=>{
-      setTimeout(()=>scrollChatBottom(false),350);
+      // 키보드 애니메이션·iOS 자동스크롤 끝난 뒤 채팅만 아래로
+      setTimeout(()=>scrollChatBottom(false),450);
     });
   }
 });
