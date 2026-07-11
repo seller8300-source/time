@@ -549,7 +549,7 @@
       <div class="chat-input">
         <input id="chatInput" type="text" placeholder="메시지를 입력하세요…" autocomplete="off"
           onkeydown="if(event.key==='Enter')sendMsg()">
-        <button id="chatSend" onclick="sendMsg()">전송</button>
+        <button id="chatSend" onclick="sendMsg()" ontouchend="event.preventDefault(); sendMsg();" onmousedown="event.preventDefault()">전송</button>
       </div>
 
       <!-- lead form (revealed) -->
