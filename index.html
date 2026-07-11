@@ -544,9 +544,6 @@
       </div>
       <div class="chat-body" id="chatBody"></div>
       <div class="quick" id="quickBtns">
-        <button onclick="quickAsk('이동식에어컨 문의하고 싶어요')">❄️ 에어컨</button>
-        <button onclick="quickAsk('제습기 문의하고 싶어요')">💧 제습기</button>
-        <button onclick="quickAsk('냉동고 문의하고 싶어요')">🧊 냉동고</button>
         <button onclick="openLeadDirect()">📋 바로 상담신청</button>
       </div>
       <div class="chat-input">
@@ -882,7 +879,7 @@ async function sendMsg(){
 
   isSending = true;
   inp.value='';
-  inp.disabled = true;
+  // inp.disabled 하면 iOS 키보드가 접힘 → 잠그지 않고 버튼만 잠금
   if(btn){ btn.disabled = true; btn.textContent='…'; }
   addMsg(text,'user');
   history.push({role:'user',text});
@@ -906,9 +903,9 @@ async function sendMsg(){
     revealLead();
   }finally{
     isSending = false;
-    inp.disabled = false;
     if(btn){ btn.disabled = false; btn.textContent='전송'; }
-    inp.focus();
+    // 포커스 유지 (키보드 계속 띄워둠, 카톡처럼)
+    if(isMobile()){ inp.focus(); }
   }
 }
 
