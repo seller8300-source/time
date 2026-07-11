@@ -161,10 +161,12 @@
     /* 열린 상태의 chat-shell을 화면 전체로 */
     body.chat-open .chat-shell{
       display:flex;
-      position:fixed;left:0;top:0;right:0;z-index:9999;
+      position:fixed;left:0;right:0;
+      top:var(--vv-top, 0px);
+      height:var(--app-height, 100vh);
+      z-index:9999;
       max-width:none;margin:0;border:0;border-radius:0;
       flex-direction:column;
-      height:var(--app-height, 100vh);   /* JS로 실제 높이 계산 (카톡 브라우저 대응) */
     }
     body.chat-open .chat-head{flex:0 0 auto}
     body.chat-open .chat-close{display:flex;align-items:center;justify-content:center}
@@ -1320,19 +1322,27 @@ function startTyping(){
 /* ====================== INIT ====================== */
 function isMobile(){ return window.matchMedia('(max-width:600px)').matches; }
 
-// 실제 화면 높이 계산 (카톡 인앱 브라우저·키보드 대응)
+// 실제 화면 높이+위치 계산 (iOS 카톡/사파리 키보드 대응)
 function setAppHeight(){
-  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  const vv = window.visualViewport;
+  const h = (vv && vv.height) || window.innerHeight;
+  const top = (vv && vv.offsetTop) || 0;
   document.documentElement.style.setProperty('--app-height', h + 'px');
+  document.documentElement.style.setProperty('--vv-top', top + 'px');
 }
 setAppHeight();
 window.addEventListener('resize', setAppHeight);
+window.addEventListener('scroll', ()=>{
+  if(document.body.classList.contains('chat-open')) setAppHeight();
+});
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize', ()=>{
     setAppHeight();
-    // 키보드 뜨면 최신 메시지로 스크롤
     const b=document.getElementById('chatBody');
     if(b && document.body.classList.contains('chat-open')) b.scrollTop=b.scrollHeight;
+  });
+  window.visualViewport.addEventListener('scroll', ()=>{
+    if(document.body.classList.contains('chat-open')) setAppHeight();
   });
 }
 
@@ -1340,7 +1350,10 @@ function openChat(){
   if(isMobile()){
     setAppHeight();
     document.body.classList.add('chat-open');
+    // 배경 스크롤 완전 잠금
+    document.documentElement.style.overflow='hidden';
     setTimeout(()=>{
+      setAppHeight();
       const b=document.getElementById('chatBody');
       if(b) b.scrollTop=b.scrollHeight;
       const inp=document.getElementById('chatInput');
@@ -1354,6 +1367,7 @@ function openChat(){
 
 function closeChat(){
   document.body.classList.remove('chat-open');
+  document.documentElement.style.overflow='';
   const inp=document.getElementById('chatInput');
   if(inp) inp.blur();
 }
