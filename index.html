@@ -146,6 +146,20 @@
   /* 모바일 상담 시작 버튼 (기본 숨김, 모바일에서만) */
   .mobile-chat-start{display:none}
 
+  /* ===== 위젯 모드 (?widget=1): 챗봇만 전체화면 ===== */
+  body.dsw-widget-mode > *:not(#consult){ display:none !important; }
+  body.dsw-widget-mode #consult{ padding:0 !important; margin:0 !important; }
+  body.dsw-widget-mode #consult .wrap > *:not(.chat-shell){ display:none !important; }
+  body.dsw-widget-mode #consult .wrap{ max-width:none; padding:0; margin:0; }
+  body.dsw-widget-mode .chat-shell{
+    display:flex !important; flex-direction:column;
+    position:fixed; inset:0; z-index:10; max-width:none; margin:0;
+    border:0; border-radius:0; height:100vh; height:100dvh;
+  }
+  body.dsw-widget-mode .chat-body{ flex:1 1 auto; height:auto; }
+  body.dsw-widget-mode .chat-close{ display:none !important; }
+  body.dsw-widget-mode .floatbar{ display:none !important; }
+
   /* ===== 모바일: 카톡식 전체화면 챗봇 ===== */
   @media(max-width:600px){
     /* 평소엔 챗봇 숨김 (버튼 눌러야 뜸) */
@@ -616,6 +630,13 @@
     <b>더시원컴퍼니</b> · 이동식에어컨 · 산업용제습기 · 냉동고 단기렌탈 전문<br>
     전화상담 09:00–18:00 (평일) · 그 외 시간은 온라인 신청 시 익일 우선 연락<br>
     <span style="opacity:.6">안내 금액은 모두 VAT 별도 · 재고 상황에 따라 변동될 수 있습니다</span>
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(124,153,168,.25);opacity:.85;font-size:11.5px;line-height:1.8">
+      회사명 : 주식회사 더타임 · 대표 : 김형일 · 전화 : 070-8821-6611<br>
+      사업자등록번호 : 205-86-01933 · 통신판매업 신고 : 2022-경기김포-1783<br>
+      주소 : 10044 경기도 김포시 양촌읍 유현리 246-1 다동, 라동<br>
+      개인정보보호책임자 : 더시원컴퍼니 (siwon_company@naver.com)<br>
+      <span style="opacity:.7">Copyright © 더시원컴퍼니 All rights reserved.</span>
+    </div>
   </div>
 </footer>
 
@@ -1412,6 +1433,12 @@ window.addEventListener('DOMContentLoaded',()=>{
   greet();
   startTyping();
   setInterval(paintStatus, 60000);
+
+  // 위젯 모드(?widget=1): 랜딩 숨기고 챗봇만 바로 열기
+  if(location.search.indexOf('widget=1') !== -1){
+    document.body.classList.add('dsw-widget-mode');
+    setTimeout(()=>{ openChat(); }, 150);
+  }
 });
 </script>
 <!-- Vercel Analytics (방문자 통계) -->
